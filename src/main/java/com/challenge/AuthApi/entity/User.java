@@ -28,4 +28,6 @@ public class User {
 
     @Column(nullable = false)
     private String role; // ADMIN ou USER
+
+
 }

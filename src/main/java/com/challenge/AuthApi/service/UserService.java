@@ -1,61 +1,74 @@
 package com.challenge.AuthApi.service;
 
-import com.challenge.AuthApi.dto.AuthResponse;
-import com.challenge.AuthApi.dto.LoginRequest;
-import com.challenge.AuthApi.dto.RegisterRequest;
-import com.challenge.AuthApi.dto.UserResponse;
 import com.challenge.AuthApi.entity.User;
 import com.challenge.AuthApi.repository.UserRepository;
-import com.challenge.AuthApi.security.JwtService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class UserService {
 
-    private final UserRepository repository;
-    private final BCryptPasswordEncoder encoder;
-    private JwtService jwtService;
-    public UserService(UserRepository repository, BCryptPasswordEncoder encoder) {
-        this.repository = repository;
-        this.encoder = encoder;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public UserResponse register(RegisterRequest request) {
+    //  Criar usuário
+    public User createUser(User user) {
 
-        repository.findByEmail(request.email())
-                .ifPresent(u -> {
-                    throw new RuntimeException("Email já cadastrado");
-                });
-
-        User user = User.builder()
-                .nome(request.nome())
-                .email(request.email())
-                .senha(encoder.encode(request.senha()))
-                .role("USER")
-                .build();
-
-        repository.save(user);
-
-        return new UserResponse(
-                user.getId(),
-                user.getNome(),
-                user.getEmail(),
-                user.getRole()
-        );
-    }
-
-    public AuthResponse login(LoginRequest request) {
-
-        User user = repository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("Credenciais inválidas"));
-
-        if (!encoder.matches(request.senha(), user.getSenha())) {
-            throw new RuntimeException("Credenciais inválidas");
+        Optional<User> existing = userRepository.findByEmail(user.getEmail());
+        if (existing.isPresent()) {
+            throw new RuntimeException("User already exists with this email");
         }
 
-        String token = jwtService.generateToken(user.getEmail(), user.getRole());
+        // criptografa senha
+        String encodedPassword = passwordEncoder.encode(user.getSenha());
+        user.setSenha(encodedPassword);
 
-        return new AuthResponse(token);
+        // define role padrão
+        if (user.getRole() == null || user.getRole().isEmpty()) {
+            user.setRole("USER");
+        }
+
+        return userRepository.save(user);
+    }
+
+    // Autenticação (login)
+    public User authenticate(String email, String password) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(password, user.getSenha())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        return user;
+    }
+
+    //  Buscar por email
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    //  Listar todos
+    public Iterable<User> findAll() {
+        return userRepository.findAll();
+    }
+
+    //  Deletar
+    public void delete(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("User not found");
+        }
+        userRepository.deleteById(id);
     }
 }
