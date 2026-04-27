@@ -1,5 +1,6 @@
-package com.challenge.AuthApi.security;
+package com.challenge.AuthApi.config;
 
+import com.challenge.AuthApi.security.JwtFilter;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
