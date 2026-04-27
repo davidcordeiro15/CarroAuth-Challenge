@@ -10,30 +10,31 @@ import com.challenge.AuthApi.security.JwtService;
 
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/auth" )
 public class AuthController {
 
     private final UserService userService;
     private final JwtService jwtService;
 
-    public AuthController(UserService userService,
-                          JwtService jwtService) {
+    public AuthController(UserService userService, JwtService jwtService) {
         this.userService = userService;
         this.jwtService = jwtService;
     }
 
-    // 🔹 REGISTER
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(
-            @Valid @RequestBody RegisterRequest request) {
-
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         User user = new User();
         user.setEmail(request.email());
         user.setSenha(request.senha());
+        user.setNome(request.nome());
+        user.setRole(request.role());
 
         User savedUser = userService.createUser(user);
 
@@ -43,27 +44,30 @@ public class AuthController {
                 savedUser.getRole()
         );
 
-        return ResponseEntity.status(201).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // 🔹 LOGIN
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(
-            @Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        try {
+            User user = userService.authenticate(
+                    request.email(),
+                    request.senha()
+            );
 
-        User user = userService.authenticate(
-                request.email(),
-                request.senha()
-        );
+            String token = jwtService.generateToken(user.getEmail(), user.getRole());
 
-        String token = jwtService.generateToken(user.getEmail(), user.getRole());
+            return ResponseEntity.ok(new AuthResponse(
+                    token,
+                    user.getEmail(),
+                    user.getRole()
+            ));
 
-        AuthResponse response = new AuthResponse(
-                token,
-                user.getEmail(),
-                user.getRole()
-        );
+        } catch (AuthenticationException e) {
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciais inválidas");
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        }
     }
 }

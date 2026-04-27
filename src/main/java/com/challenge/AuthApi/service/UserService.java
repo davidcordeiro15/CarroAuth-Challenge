@@ -1,8 +1,12 @@
 package com.challenge.AuthApi.service;
 
 import com.challenge.AuthApi.entity.User;
+import com.challenge.AuthApi.exception.UserAlreadyExistsException;
+import com.challenge.AuthApi.exception.UserNotFoundException;
 import com.challenge.AuthApi.repository.UserRepository;
 
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,10 +27,9 @@ public class UserService {
     //  Criar usuário
     public User createUser(User user) {
 
-        Optional<User> existing = userRepository.findByEmail(user.getEmail());
-        if (existing.isPresent()) {
-            throw new RuntimeException("User already exists with this email");
-        }
+        userRepository.findByEmail(user.getEmail()).ifPresent(u -> {
+            throw new UserAlreadyExistsException("User already exists with this email");
+        });
 
         // criptografa senha
         String encodedPassword = passwordEncoder.encode(user.getSenha());
@@ -40,23 +43,22 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // Autenticação (login)
+    // Autenticação (login) - Lança exceções específicas do Spring Security
     public User authenticate(String email, String password) {
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         if (!passwordEncoder.matches(password, user.getSenha())) {
-            throw new RuntimeException("Invalid password");
+            throw new BadCredentialsException("Invalid password");
         }
 
         return user;
     }
 
-    //  Buscar por email
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    //  Buscar por email - Retorna Optional para maior flexibilidade
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     //  Listar todos
@@ -67,8 +69,41 @@ public class UserService {
     //  Deletar
     public void delete(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found");
+            throw new UserNotFoundException("User not found");
         }
         userRepository.deleteById(id);
+    }
+
+    public User update(Long id, User updatedUser) {
+
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        // Atualiza nome
+        if (updatedUser.getNome() != null) {
+            existingUser.setNome(updatedUser.getNome());
+        }
+
+        // Atualiza email (com validação)
+        if (updatedUser.getEmail() != null) {
+            userRepository.findByEmail(updatedUser.getEmail())
+                    .ifPresent(user -> {
+                        if (!user.getId().equals(id)) {
+                            throw new UserAlreadyExistsException("Email already in use");
+                        }
+                    });
+
+            existingUser.setEmail(updatedUser.getEmail());
+        }
+
+        if (updatedUser.getSenha() != null && !updatedUser.getSenha().isBlank()) {
+            existingUser.setSenha(passwordEncoder.encode(updatedUser.getSenha()));
+        }
+
+        if (updatedUser.getRole() != null) {
+            existingUser.setRole(updatedUser.getRole());
+        }
+
+        return userRepository.save(existingUser);
     }
 }

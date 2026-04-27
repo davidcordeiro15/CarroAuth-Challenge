@@ -16,5 +16,9 @@ public record RegisterRequest(
 
         @NotBlank
         @Size(min = 6)
-        String senha
+        String senha,
+
+        @NotBlank
+        @Size(min = 3, max = 100)
+        String role
 ) {}
