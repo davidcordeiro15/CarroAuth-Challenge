@@ -1,9 +1,6 @@
 package com.challenge.AuthApi.controller;
 
-import com.challenge.AuthApi.dto.AuthResponse;
-import com.challenge.AuthApi.dto.LoginRequest;
-import com.challenge.AuthApi.dto.RegisterRequest;
-import com.challenge.AuthApi.dto.UserResponse;
+import com.challenge.AuthApi.dto.*;
 import com.challenge.AuthApi.entity.User;
 import com.challenge.AuthApi.service.UserService;
 import com.challenge.AuthApi.security.JwtService;
@@ -68,6 +65,29 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciais inválidas");
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        }
+    }
+    @PostMapping("/validate")
+    public ResponseEntity<ValidateTokenResponse> validateToken(
+            @Valid @RequestBody ValidateTokenRequest request) {
+
+        try {
+
+            User user = userService.validateToken(request.token(), jwtService);
+
+            return ResponseEntity.ok(
+                    new ValidateTokenResponse(
+                            true,
+                            user.getEmail(),
+                            user.getRole()
+                    )
+            );
+
+        } catch (ResponseStatusException e) {
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    new ValidateTokenResponse(false, null, null)
+            );
         }
     }
 }

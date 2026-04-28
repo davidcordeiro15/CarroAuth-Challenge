@@ -5,12 +5,20 @@ import com.challenge.AuthApi.exception.UserAlreadyExistsException;
 import com.challenge.AuthApi.exception.UserNotFoundException;
 import com.challenge.AuthApi.repository.UserRepository;
 
+import com.challenge.AuthApi.security.JwtService;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Date;
 import java.util.Optional;
+
+
 
 @Service
 public class UserService {
@@ -105,5 +113,19 @@ public class UserService {
         }
 
         return userRepository.save(existingUser);
+    }
+
+    public User validateToken(String token, JwtService jwtService) {
+
+        if (!jwtService.isValid(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido");
+        }
+
+        String email = jwtService.extractEmail(token);
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não encontrado")
+                );
     }
 }

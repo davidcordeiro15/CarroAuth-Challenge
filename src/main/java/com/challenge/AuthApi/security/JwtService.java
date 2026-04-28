@@ -55,4 +55,12 @@ public class JwtService {
                 .parseClaimsJws(token)
                 .getBody();
     }
+
+    public boolean isExpired(String token) {
+        try {
+            return getClaims(token).getExpiration().before(new Date());
+        } catch (Exception e) {
+            return true;
+        }
+    }
 }
