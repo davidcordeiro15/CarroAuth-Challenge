@@ -4,6 +4,7 @@ package com.challenge.AuthApi.controller;
 import com.challenge.AuthApi.entity.User;
 import com.challenge.AuthApi.service.UserService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ public class UserController {
     }
 
     // LISTAR USUÁRIOS
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping
     //@PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<User>> getAllUsers() {
@@ -31,6 +33,7 @@ public class UserController {
     }
 
     //  ATUALIZAR USUÁRIO
+    @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(
             @PathVariable Long id,
@@ -41,6 +44,7 @@ public class UserController {
     }
 
     //  DELETAR USUÁRIO
+    @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
 
