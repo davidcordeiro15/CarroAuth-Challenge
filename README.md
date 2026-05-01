@@ -29,22 +29,7 @@ A **AuthApi** é uma API RESTful desenvolvida em Java com Spring Boot, cujo prop
 
 A API emite **tokens JWT (JSON Web Token)** após a autenticação bem-sucedida. Esses tokens carregam as informações necessárias para que cada requisição subsequente seja validada sem que o servidor precise consultar o banco de dados a cada chamada.
 
-### Problema que Resolve
 
-Em sistemas modernos, a autenticação baseada em sessão (cookies de sessão no servidor) cria problemas de escalabilidade: cada servidor precisa conhecer a sessão do usuário. A AuthApi resolve isso adotando uma abordagem **stateless** (sem estado), onde toda a informação de identidade fica dentro do próprio token JWT, que viaja no cabeçalho de cada requisição.
-
-```
-┌─────────────────────────────────────────────────────┐
-│             Problema: Quem é esse usuário?           │
-│                                                     │
-│  Abordagem Antiga (Sessão):                         │
-│  Cliente → [session_id] → Servidor consulta DB      │
-│                                                     │
-│  Abordagem Moderna (JWT / Stateless):               │
-│  Cliente → [JWT assinado] → Servidor valida         │
-│           ↑ Toda a identidade está aqui ↑           │
-└─────────────────────────────────────────────────────┘
-```
 
 ### Importância da Segurança em APIs
 
@@ -90,11 +75,6 @@ Na AuthApi, a autorização é controlada pela anotação `@PreAuthorize` do Spr
 ### 🎟️ O que é JWT (JSON Web Token)?
 
 JWT é um padrão aberto (RFC 7519) para transmitir informações de forma segura entre partes como um objeto JSON compacto e assinado digitalmente.
-
-Pense no JWT como uma **carteirinha de clube** que:
-- Contém suas informações (nome, cargo, validade)
-- É assinada pelo clube (não pode ser falsificada)
-- Pode ser verificada por qualquer funcionário sem consultar um cadastro central
 
 A AuthApi usa JWT assinado com o algoritmo **HS256** (HMAC-SHA256), garantindo que qualquer alteração no token seja imediatamente detectada.
 
@@ -493,8 +473,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 **Segurança aplicada:**
 - `JwtFilter` intercepta e valida o token antes do controller
 - Rate limiting por IP (Bucket4j — 20 requisições por minuto)
-
-> ⚠️ **Nota de segurança identificada no código:** A anotação `@PreAuthorize("hasRole('ADMIN')")` está comentada neste endpoint. Isso significa que qualquer usuário autenticado (inclusive `USER`) pode listar todos os usuários. Em produção, esta linha deve ser descomentada.
 
 ---
 

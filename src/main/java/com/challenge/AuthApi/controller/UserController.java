@@ -26,7 +26,7 @@ public class UserController {
     // LISTAR USUÁRIOS
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping
-    //@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = (List<User>) userService.findAll();
         return ResponseEntity.ok(users);
