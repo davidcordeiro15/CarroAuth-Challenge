@@ -1,6 +1,6 @@
 # 🔐 AuthApi — API de Autenticação e Autorização JWT
 
-> **Disciplina:** Cybersecurity | **Stack:** Java 21 · Spring Boot 4 · Oracle DB · JWT · Bucket4j
+>  **Stack:** Java 21 · Spring Boot 4 · Oracle DB · JWT · Bucket4j
 
 ---
 
